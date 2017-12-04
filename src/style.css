@@ -1,0 +1,11 @@
+.table {}
+    .table .row {}
+        .table .row .cell {
+            border: .5px dashed #ccc;
+            cursor: pointer; }
+        .table .row .cell:hover {
+            border-color: #00c; }
+        .table .row .cell.cell-alive {
+            background-color: #000; }
+        .table .row .cell.cell-dead {
+            background-color: #ddd; }

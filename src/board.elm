@@ -6,8 +6,6 @@ module Board
         , toggle
         , Point
         , Board
-        , rows
-        , cols
         , get
         , set
         , clear
@@ -57,74 +55,72 @@ type alias Point =
 
 
 rowIndex : Board -> Int -> Int
-rowIndex (Board cols _) row =
+rowIndex { cols } row =
     row * cols
 
 
 toIndex : Board -> Point -> Maybe Int
 toIndex board ( x, y ) =
-    if (x < 0 || x >= rows board) then
+    if (x < 0 || x >= board.rows) then
         Nothing
-    else if (y < 0 || y >= cols board) then
+    else if (y < 0 || y >= board.cols) then
         Nothing
     else
         Just ((rowIndex board x) + y)
 
 
 fromIndex : Board -> Int -> Maybe Point
-fromIndex ((Board cols _) as board) index =
+fromIndex board index =
     if inBounds board index then
-        Just ( index // cols, index % cols )
+        Just ( index // board.cols, index % board.cols )
     else
         Nothing
 
 
 inBounds : Board -> Int -> Bool
-inBounds (Board colCount array) index =
-    index >= 0 && index < Array.length array
+inBounds board index =
+    index >= 0 && index < Array.length board.array
 
 
 
 -- Board
 
 
-type Board
-    = Board Int (Array Status)
-
-
-rows : Board -> Int
-rows (Board cols list) =
-    (Array.length list) // cols
-
-
-cols : Board -> Int
-cols (Board cols _) =
-    cols
+type alias Board =
+    { array : Array Status
+    , rows : Int
+    , cols : Int
+    }
 
 
 get : Board -> Point -> Maybe Status
-get ((Board _ array) as board) point =
+get board point =
     toIndex board point
-        |> Maybe.andThen (\index -> Array.get index array)
+        |> Maybe.andThen (\index -> Array.get index board.array)
 
 
 set : Board -> Point -> Status -> Board
-set ((Board cols array) as board) point status =
+set board point status =
     let
         index =
             toIndex board point |> Maybe.withDefault -1
     in
-        Array.set index status array |> Board cols
+        { board | array = Array.set index status board.array }
 
 
 clear : Board -> Board
-clear ((Board cols array) as board) =
-    Board cols <| Array.map (\_ -> Dead) array
+clear board =
+    { board
+        | array = Array.map (\_ -> Dead) board.array
+    }
 
 
 initialize : ( Int, Int ) -> Board
 initialize ( rows, cols ) =
-    Array.repeat (rows * cols) Dead |> Board cols
+    { array = Array.repeat (rows * cols) Dead
+    , rows = rows
+    , cols = cols
+    }
 
 
 fromList : List (List Status) -> Board
@@ -138,25 +134,28 @@ fromList list =
 
         flat =
             List.concat list
+
+        rows =
+            List.length flat // cols
     in
-        Array.fromList flat |> Board cols
+        { array = Array.fromList flat, rows = rows, cols = cols }
 
 
 getRow : Board -> Int -> List Status
-getRow ((Board cols array) as board) row =
+getRow board row =
     let
         head =
             rowIndex board row
 
         tail =
-            head + cols
+            head + board.cols
     in
-        Array.slice head tail array |> Array.toList
+        Array.slice head tail board.array |> Array.toList
 
 
 toList : Board -> List (List Status)
-toList ((Board numCols _) as board) =
-    List.range 0 ((rows board) - 1)
+toList board =
+    List.range 0 (board.rows - 1)
         |> List.map (getRow board)
 
 
@@ -225,5 +224,7 @@ nextStatusAt board index status =
 
 
 nextBoard : Board -> Board
-nextBoard ((Board cols array) as board) =
-    Board cols <| Array.indexedMap (nextStatusAt board) array
+nextBoard board =
+    { board
+        | array = Array.indexedMap (nextStatusAt board) board.array
+    }

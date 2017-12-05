@@ -264,9 +264,10 @@ setPause pause model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ AnimationFrame.diffs Frame
-        ]
+    if model.paused then
+        Sub.none
+    else
+        AnimationFrame.diffs Frame
 
 
 

@@ -4,8 +4,10 @@ import AnimationFrame
 import Board exposing (Board, Status(..), Point)
 import Debug
 import Html exposing (..)
-import Html.Events exposing (onClick, onMouseDown, onMouseUp, onMouseOver)
-import Html.Attributes exposing (style, class, classList)
+import Html.Attributes exposing (attribute)
+import Html.Events exposing (on, onClick, onMouseDown, onMouseUp, onMouseOver, targetValue)
+import Html.Attributes exposing (style, class, classList, value)
+import Json.Decode as Decode
 import Time exposing (Time)
 
 
@@ -27,11 +29,13 @@ type Msg
     | ResetBoard
     | PlayPause
     | SetDragging Bool
+    | SetSpeed Int
 
 
 type alias Model =
     { board : Board
     , elapsed : Float
+    , speed : Int
     , tickThreshold : Float
     , cellSize : Int
     , paused : Bool
@@ -44,7 +48,8 @@ defaultModel : Model
 defaultModel =
     { board = Board.initialize ( 50, 50 )
     , elapsed = 0
-    , tickThreshold = 1000
+    , speed = 3
+    , tickThreshold = 2000
     , cellSize = 10
     , paused = True
     , dragging = False
@@ -60,11 +65,41 @@ view : Model -> Html Msg
 view model =
     div []
         [ gameBoard model
+        , speedSetting model.speed
         , iterations model.iterations
         , resetButton
         , nextButton
         , playPauseButton model.paused
         ]
+
+
+speedSetting : Int -> Html Msg
+speedSetting speed =
+    select
+        [ value <| toString speed
+        , on "change" (Decode.map speedDecoder targetValue)
+        ]
+        [ speedOption 1
+        , speedOption 2
+        , speedOption 3
+        , speedOption 4
+        , speedOption 5
+        ]
+
+
+speedDecoder : String -> Msg
+speedDecoder value =
+    case String.toInt value of
+        Ok int ->
+            SetSpeed int
+
+        Err _ ->
+            NoOp
+
+
+speedOption : Int -> Html Msg
+speedOption speed =
+    option [ value <| toString speed ] [ text <| toString speed ]
 
 
 iterations : Int -> Html Msg
@@ -136,26 +171,24 @@ boardCell model point status =
             , ( "cell-alive", Board.isAlive status )
             , ( "cell-dead", Board.isDead status )
             ]
-
-        -- Make the cell size configurable
         , style
             [ ( "width", toString model.cellSize ++ "px" )
             , ( "height", toString model.cellSize ++ "px" )
             ]
-
-        -- Toggle the cell status on click
         , onClick <|
             SetPoint point <|
                 Board.toggle status
-
-        -- Make cell alive on hover if in the middle of dragging
-        , onMouseOver <|
-            if model.dragging then
-                SetPoint point Alive
-            else
-                NoOp
+        , setPointOnDrag point model
         ]
         []
+
+
+setPointOnDrag : Point -> BoardModel a -> Html.Attribute Msg
+setPointOnDrag point model =
+    if model.dragging then
+        onMouseOver (SetPoint point Alive)
+    else
+        attribute "_" ""
 
 
 
@@ -174,7 +207,7 @@ update msg model =
             else if shouldStep model then
                 ( stepGame model, Cmd.none )
             else
-                ( timeElapsed delta model, Cmd.none )
+                ( timeElapsed delta model.speed model, Cmd.none )
 
         StepGame ->
             ( stepGame model, Cmd.none )
@@ -196,6 +229,9 @@ update msg model =
         SetDragging bool ->
             ( setDragging bool model, Cmd.none )
 
+        SetSpeed speed ->
+            ( setSpeed speed model, Cmd.none )
+
         PlayPause ->
             ( model
                 |> togglePause
@@ -204,18 +240,19 @@ update msg model =
             )
 
 
+setSpeed : Int -> Model -> Model
+setSpeed speed model =
+    { model | speed = speed }
+
+
 setDragging : Bool -> Model -> Model
 setDragging dragging model =
-    { model
-        | dragging = dragging
-    }
+    { model | dragging = dragging }
 
 
 setPoint : Point -> Status -> Model -> Model
 setPoint point status model =
-    { model
-        | board = Board.set model.board point status
-    }
+    { model | board = Board.set model.board point status }
 
 
 resetBoard : Model -> Model
@@ -241,11 +278,9 @@ shouldStep model =
     model.elapsed >= model.tickThreshold
 
 
-timeElapsed : Float -> Model -> Model
-timeElapsed delta model =
-    { model
-        | elapsed = model.elapsed + delta
-    }
+timeElapsed : Float -> Int -> Model -> Model
+timeElapsed delta speed model =
+    { model | elapsed = model.elapsed + (delta * toFloat (speed * speed)) }
 
 
 togglePause : Model -> Model

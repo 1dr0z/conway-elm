@@ -5,9 +5,8 @@ import Board exposing (Board, Status(..), Point)
 import Debug
 import Html exposing (..)
 import Html.Attributes exposing (attribute)
-import Html.Events exposing (on, onClick, onMouseDown, onMouseUp, onMouseOver, targetValue)
+import Html.Events exposing (onClick, onInput, onMouseDown, onMouseUp, onMouseOver)
 import Html.Attributes exposing (style, class, classList, value)
-import Json.Decode as Decode
 import Time exposing (Time)
 
 
@@ -77,7 +76,7 @@ speedSetting : Int -> Html Msg
 speedSetting speed =
     select
         [ value <| toString speed
-        , on "change" (Decode.map speedDecoder targetValue)
+        , onInput speedDecoder
         ]
         [ speedOption 1
         , speedOption 2

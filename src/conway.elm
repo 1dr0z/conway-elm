@@ -205,7 +205,11 @@ update msg model =
             if model.paused then
                 ( model, Cmd.none )
             else if shouldStep model then
-                ( stepGame model, Cmd.none )
+                ( model
+                    |> stepGame
+                    |> pauseIfUnchanged model.board
+                , Cmd.none
+                )
             else
                 ( timeElapsed delta model.speed model, Cmd.none )
 
@@ -266,15 +270,11 @@ resetBoard model =
 
 stepGame : Model -> Model
 stepGame model =
-    let
-        nextBoard = Board.nextBoard model.board
-    in
-        { model
-            | board = Board.nextBoard model.board
-            , iterations = model.iterations + 1
-            , elapsed = 0
-            , paused = not model.paused && model.board == nextBoard
-        }
+    { model
+        | board = Board.nextBoard model.board
+        , iterations = model.iterations + 1
+        , elapsed = 0
+    }
 
 
 shouldStep : Model -> Bool
@@ -285,6 +285,11 @@ shouldStep model =
 timeElapsed : Float -> Int -> Model -> Model
 timeElapsed delta speed model =
     { model | elapsed = model.elapsed + (delta * toFloat (speed * speed)) }
+
+
+pauseIfUnchanged : Board -> Model -> Model
+pauseIfUnchanged board model =
+    { model | paused = (board == model.board) }
 
 
 togglePause : Model -> Model

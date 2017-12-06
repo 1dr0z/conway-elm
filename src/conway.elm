@@ -266,11 +266,15 @@ resetBoard model =
 
 stepGame : Model -> Model
 stepGame model =
-    { model
-        | board = Board.nextBoard model.board
-        , iterations = model.iterations + 1
-        , elapsed = 0
-    }
+    let
+        nextBoard = Board.nextBoard model.board
+    in
+        { model
+            | board = Board.nextBoard model.board
+            , iterations = model.iterations + 1
+            , elapsed = 0
+            , paused = not model.paused && model.board == nextBoard
+        }
 
 
 shouldStep : Model -> Bool

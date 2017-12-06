@@ -237,7 +237,7 @@ update msg model =
 
         PlayPause ->
             ( model
-                |> togglePause
+                |> setPause (not model.paused)
                 |> stepGame
             , Cmd.none
             )
@@ -289,11 +289,6 @@ timeElapsed delta speed model =
 pauseIfUnchanged : Board -> Model -> Model
 pauseIfUnchanged board model =
     { model | paused = (board == model.board) }
-
-
-togglePause : Model -> Model
-togglePause model =
-    setPause (not model.paused) model
 
 
 setPause : Bool -> Model -> Model

@@ -306,4 +306,3 @@ subscriptions model =
         Sub.none
     else
         AnimationFrame.diffs Frame
-

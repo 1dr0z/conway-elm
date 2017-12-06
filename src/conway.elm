@@ -307,7 +307,3 @@ subscriptions model =
     else
         AnimationFrame.diffs Frame
 
-
-
--- Allow controlling the animation speed
--- Allow controlling the size of the grid
